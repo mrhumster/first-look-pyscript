@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PyScript widgets</title>
+    <!-- PyScript source -->
+    <link rel="stylesheet" href="static/css/pyscript.css" />
+    <script defer src="static/js/pyscript.js"></script>
+</head>
+<body>
+    <py-title>PyScript Playground</py-title>
+    <py-box widths="2/3;1/6;1/6">
+      <div>Wide Column</div>
+      <div>Narrow Column</div>
+      <div>Narrow Column</div>
+    </py-box>
+    <py-button label="Click me" styles="btn big">
+def on_click(event):
+    print(event)
+    </py-button>
+    <py-inputbox>
+def on_keypress(event):
+    print(event)
+    </py-inputbox>
+</body>
+</html>
