@@ -4,8 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Hello, world!</title>
-    <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
-    <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+    <!-- PyScript source -->
+    <link rel="stylesheet" href="static/css/pyscript.css" />
+    <script defer src="static/js/pyscript.js"></script>
+    <py-config>
+        - autoclose_loader: true
+        - runtimes:
+            -
+                src: "static/js/pyodide.js"
+                name: pyodide-0.20
+                lang: python
+    </py-config>
 </head>
 <body>
     <py-script>print('Hello, World!')</py-script>
