@@ -10,15 +10,18 @@
 </head>
 <body>
     <py-env>
-        - matplotlib
-        - numpy
+    - matplotlib
+    - numpy
+    - paths:
+        - static/js/src/waves.py
     </py-env>
     <py-script>
 import matplotlib.pyplot as plt
 import numpy as np
+import waves
 
 time = np.linspace(0, 2 * np.pi, 100)
-plt.plot(time, np.sin(time))
+plt.plot(time, waves.wave(440)(time))
 plt
     </py-script>
 </body>

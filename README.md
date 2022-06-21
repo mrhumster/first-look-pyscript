@@ -566,3 +566,128 @@ WebAssembly и не связана с Pyodide. Получить пользова
 
 ## Модули расширения `C`, скомпилированные для `WebAssembly`
 
+Многие библиотеки Python содержат фрагменты кода, написанного на `C` или других языках для повышения производительности 
+и использования определенных системных вызовов, недоступных в чистом Python. Есть несколько способов взаимодействия с 
+таким кодом, но обычно его заключают в модуль расширения `Python C`, который можно скомпилировать в собственный код 
+вашей платформы и динамически загрузить во время выполнения.
+
+Использование компилятора `emscripten` позволяет ориентироваться на `WebAssembly`, а не на конкретную архитектуру 
+компьютера и операционную систему. Однако сделать это не так-то просто. Даже если вы знаете, как создать колесо 
+Python для среды выполнения `Pyodide`, и вас не пугает этот процесс, `<py-env>` тег PyScript всегда ожидает либо 
+колесо на чистом Python, либо пакет, связанный с `Pyodide`.
+
+Чтобы установить колесо, содержащее код `WebAssembly`, вы можете вызвать `loadPackage()` функцию `Pyodide`, используя 
+ее интерфейс `Python pyodide_js`, упомянутый ранее. Вы также можете использовать `Pyodide API` напрямую в `JavaScript`, 
+но это запустит независимую среду выполнения вместо того, чтобы подключаться к уже созданной PyScript. В результате 
+ваш пользовательский модуль с кодом `WebAssembly` не будет виден в PyScript.
+
+Загрузка пользовательских модулей расширения `C` со временем может стать более простой. До тех пор вам лучше всего 
+терпеливо ждать, пока `Pyodide` поставит нужную библиотеку. Кроме того, вы можете создать свою собственную среду 
+выполнения `Pyodide` из исходного кода с дополнительными кросс-компилируемыми библиотеками. Существует инструмент 
+командной строки под названием `pyodide-build`, который автоматизирует некоторые из необходимых шагов.
+
+На данный момент вы можете придерживаться пользовательских модулей Python, написанных вручную.
+
+## Пользовательские модули Python и файлы данных
+
+Вы можете использовать `<py-env>` или `micropip`, чтобы ваши пользовательские модули можно было импортировать в 
+приложения PyScript. Предположим, вы создали вспомогательный модуль с именем `waves.py`, который находится в 
+подпапке `src/`:
+
+```python
+# src/waves.py
+
+import numpy as np
+
+def wave(frequency, amplitude=1, phase=0):
+    def _wave(time):
+        return amplitude * np.sin(2 * np.pi * frequency * time + phase)
+
+    return _wave
+```
+Имя вашего модуля использует форму множественного числа, чтобы избежать конфликта с модулем `wave` в стандартной 
+библиотеке, которая используется для чтения и записи в формате аудиофайла Waveform (WAV). Ваш модуль определяет 
+единственную функцию с именем `wave()`, которая возвращает [замыкание](https://en.wikipedia.org/wiki/Closure_(computer_programming)). 
+Внутренняя функция `_wave()`, на которой основано замыкание, использует `NumPy` для генерации чистой синусоиды с 
+заданной частотой, амплитудой и фазой.
+
+Прежде чем вы сможете импортировать свой модуль в тег `<py-script>` из встроенного или исходного скрипта, вам 
+необходимо загрузить его в свой веб-браузер `<py-env>`, указав специальный атрибут `paths` в YAML:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sine Wave</title>
+    <!-- PyScript source -->
+    <link rel="stylesheet" href="static/css/pyscript.css" />
+    <script defer src="static/js/pyscript.js"></script>
+</head>
+<body>
+    <py-env>
+    - matplotlib
+    - numpy
+    - paths:
+        - static/js/src/waves.py
+    </py-env>
+    <py-script>
+import matplotlib.pyplot as plt
+import numpy as np
+import waves
+
+time = np.linspace(0, 2 * np.pi, 100)
+plt.plot(time, waves.wave(440)(time))
+plt
+    </py-script>
+</body>
+</html>
+```
+
+Стоит отметить, что, хотя вы не можете загрузить каталог в PyScript, вы можете злоупотреблять этим атрибутом
+`paths`, чтобы загрузить в него практически любой файл. Сюда входят файлы данных, такие как текстовые файлы CSV или 
+двоичная база данных SQLite:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loading Data</title>
+  <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+  <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+</head>
+<body>
+  <py-env>
+    - paths:
+        - data/people.csv
+        - data/people.sql
+  </py-env>
+  <py-script>
+with open("people.csv") as file:
+    print(file.read())
+  </py-script>
+  <py-script>
+import sqlite3
+
+with sqlite3.connect("people.sql") as connection:
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM people")
+    for row in cursor.fetchall():
+        print(row)
+  </py-script>
+</body>
+</html>
+```
+
+Обратите внимание, что когда вы извлекаете файлы с помощью `<py-env>`, вы теряете информацию об их исходной структуре 
+каталогов, поскольку все файлы оказываются в одном целевом каталоге. Когда вы открываете файл, вы указываете только 
+его имя без пути, а это значит, что ваши файлы должны иметь уникальное имя. Позже вы узнаете, как смягчить эту 
+проблему, записав в виртуальную файловую систему в Pyodide.
+
+Хорошо. Теперь, когда вы знаете, как перевести свой код Python или чужой код в PyScript, вам следует научиться более 
+эффективно работать с фреймворком.
+
+# Эмуляция Python REPL и Jupyter Notebook
