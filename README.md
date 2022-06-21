@@ -691,3 +691,62 @@ with sqlite3.connect("people.sql") as connection:
 эффективно работать с фреймворком.
 
 # Эмуляция Python REPL и Jupyter Notebook
+
+Быстрый и увлекательный способ изучения Python или любой из его базовых библиотек — это опробовать их в интерактивном 
+сеансе интерпретатора, также известном как `Read-Eval-Print-Loop (REPL)`. Взаимодействуя с кодом, вы можете изучить, 
+какие функции и классы доступны и как вы должны их использовать. Это ничем не отличается от PyScript.
+
+Поскольку для загрузки среды PyScript требуется некоторое время, обновление страницы каждый раз, когда вы редактируете 
+свой код, не поможет. К счастью, фреймворк поставляется с еще одним пользовательским элементом `<py-repl>`, который 
+позволяет выполнять небольшие фрагменты кода без перезагрузки страницы. 
+
+Вы можете иметь столько из них, сколько хотите в своем HTML, оставляя их пустыми или предварительно заполняя их 
+некоторым начальным кодом Python:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyScript REPL</title>
+  <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+  <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+  <py-env>
+    - matplotlib
+    - numpy
+  </py-env>
+</head>
+<body>
+  <py-repl>
+import matplotlib.pyplot as plt
+import numpy as np
+  </py-repl>
+  <py-repl>
+def wave(frequency, amplitude=1, phase=0):
+    def _wave(time):
+        return amplitude * np.sin(2 * np.pi * frequency * time + phase)
+
+    return _wave
+  </py-repl>
+  <py-repl></py-repl>
+</body>
+</html>
+```
+
+В отличие от элементов, которые вы уже изучили, `<py-repl>` имеет визуальное представление, основанное на редакторе 
+[CodeMirror](https://codemirror.net/), который поддерживает подсветку синтаксиса с возможностью выбора темы, 
+автозаполнение, свертывание кода и многое другое. Пока вы включили таблицу стилей CSS по умолчанию, предоставленную 
+PyScript, этот новый элемент должен выглядеть примерно так при отображении в браузере:
+
+![REPL Sample](img/sample-repl.png)
+
+Каждый экземпляр `<py-repl>` напоминает ячейку в Jupyter Notebook. Вы можете ввести несколько строк кода Python в 
+ячейку и нажать зеленую кнопку воспроизведения в правом нижнем углу, чтобы выполнить код. Вы также можете использовать 
+комбинацию клавиш <kbd>Shift</kbd>+<kbd>Enter</kbd> для достижения аналогичного эффекта. 
+Ниже приведены несколько дополнительных сочетаний клавиш, предоставляемых `CodeMirror`:
+
+| Действие  | macOS                        | Linux/Windows                 |
+| --------- |------------------------------|-------------------------------|
+| Поиск     | 	<kbd>Cmd</kbd>+<kbd>F</kbd> | <kbd>^Ctrl</kbd>+<kbd>F</kbd> |
+
