@@ -19,5 +19,9 @@
 <body>
     <py-script>import pyodide_js; print(f"Pyodide JS version: {pyodide_js.version}")</py-script>
     <py-script>import sys; print(f"Python {sys.version}")</py-script>
+    <py-script>
+        import xml.etree.ElementTree as ET
+        ET.fromstring("&lt;person&gt;John Doe&lt;/person&gt;")
+    </py-script>
 </body>
 </html>
