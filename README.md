@@ -219,3 +219,69 @@ Pyodide и базового интерпретатора Python. Чтобы пр
 
 # Проверьте свои версии Pyodide и Python
 
+Чтобы проверить версию `Pyodide`, вам нужна всего одна строка кода. 
+
+Вернитесь в редактор и замените `Hello, World!` код следующим фрагментом:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hello, world!</title>
+    <!-- PyScript source -->
+    <link rel="stylesheet" href="static/css/pyscript.css" />
+    <script defer src="static/js/pyscript.js"></script>
+    <py-config>
+        - autoclose_loader: true
+        - runtimes:
+            -
+                src: "static/js/pyodide.js"
+                name: pyodide-0.20
+                lang: python
+    </py-config>
+</head>
+<body>
+    <py-script>import pyodide_js; print(pyodide_js.version)</py-script>
+</body>
+</html>
+```
+
+Он зависит от `pyodide_js` модуля, который автоматически внедряется в PyScript. 
+Вы можете использовать его для доступа к `JavaScript API Pyodide` непосредственно 
+из Python, если PyScript не предоставляет собственный уровень абстракции для 
+данной функции.
+
+Проверка вашей версии Python в PyScript выглядит так же, как и в стандартном 
+интерпретаторе CPython:
+
+```html
+<py-script>import sys; print(f"Python {sys.version}")</py-script>
+```
+
+Вы импортируете `sys` модуль из стандартной библиотеки для проверки `sys.version`
+константы, а затем печатаете его с помощью [f-строки](https://realpython.com/python-f-strings/). 
+Когда вы обновляете страницу в веб-браузере и позволяете ей перезагрузиться, она должна создать строку, 
+начинающуюся примерно так:
+
+    Python 3.10.2 (main, Apr 9 2022, 20:52:01) [...]
+
+Это то, что вы обычно видите, когда запускаете интерактивный интерпретатор Python 
+в командной строке. В этом случае Pyodide не сильно отставал от последней версии 
+CPython, которая на момент написания этого руководства была 3.10.4.
+
+Кстати, вы заметили точку с запятой (;) в приведенных выше примерах? В Python 
+точка с запятой разделяет несколько операторов, которые появляются в одной строке, 
+что может быть полезно при написании однострочного сценария или когда вы ограничены, 
+например, [timeit](https://realpython.com/python-timer/#estimating-running-time-with-timeit)
+строкой настройки модуля.
+
+Использование точек с запятой в коде Python встречается редко и обычно не одобряется опытными 
+питонистами. Однако этот непопулярный символ помогает обойти проблему со **значительным пробелом** 
+в Python, который иногда может привести к беспорядку в PyScript. 
+
+В следующем разделе вы узнаете, как работать с **отступами блоков** и форматированием кода Python, 
+встроенного в HTML.
+
+# Работа с форматированием кода Python

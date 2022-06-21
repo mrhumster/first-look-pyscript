@@ -17,6 +17,7 @@
     </py-config>
 </head>
 <body>
-    <py-script>print('Hello, World!')</py-script>
+    <py-script>import pyodide_js; print(f"Pyodide JS version: {pyodide_js.version}")</py-script>
+    <py-script>import sys; print(f"Python {sys.version}")</py-script>
 </body>
 </html>
