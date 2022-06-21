@@ -131,5 +131,91 @@ URL-адрес с `Pyodide` был жестко запрограммирован
 позволяет указать URL-адрес с желаемой версией `Pyodide`:
 
 ```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hello, world!</title>
+    <!-- PyScript source -->
+    <link rel="stylesheet" href="static/css/pyscript.css" />
+    <script defer src="static/js/pyscript.js"></script>
+    <py-config>
+        - autoclose_loader: true
+        - runtimes:
+            -
+                src: "static/js/pyodide.js"
+                name: pyodide-0.20
+                lang: python
+    </py-config>
+</head>
+<body>
+    <py-script>print('Hello, World!')</py-script>
+</body>
+</html>
+```
+
+Содержимое этого необязательного тега является частью конфигурации 
+[YAML](https://realpython.com/python-yaml/). Вы можете использовать атрибут `src`, чтобы 
+предоставить либо URL-адрес с конкретной версией `Pyodide`, размещенной в Интернете, 
+либо локальный файл, который вы загрузите.
+
+Чтобы получить актуальный список оставшихся файлов, которые ваш браузер будет загружать 
+из CDN или загружать из своего кеша, вы можете перейти к инструментам веб-разработки и 
+переключиться на вкладку «Сеть» перед обновлением страницы. Однако есть вероятность, 
+что в конечном итоге вам потребуются еще несколько файлов, или их имена могут измениться 
+в будущем, поэтому проверка сетевого трафика быстро станет неприятной.
+
+Для целей разработки, вероятно, удобнее загрузить все файлы выпуска Pyodide и позже решить, 
+какие из них действительно нужны вашему приложению. Итак, если вы не против скачать несколько 
+сотен мегабайт, скачайте 
+[tar-архив](https://github.com/pyodide/pyodide/releases/download/0.20.0/pyodide-build-0.20.0.tar.bz2) 
+релиза с GitHub и распакуйте его в папку вашего приложения `Hello, World!`:
+
+```shell
+$ VERSION='0.20.0'
+$ TARBALL="pyodide-build-$VERSION.tar.bz2"
+$ GITHUB_URL='https://github.com/pyodide/pyodide/releases/download'
+$ wget "$GITHUB_URL/$VERSION/$TARBALL"
+$ tar -xf "$TARBALL" --strip-components=1 pyodide
+```
+
+Пока все идет хорошо, в папке вашего приложения должны быть как минимум эти 
+файлы:
 
 ```
+static
+|
+├───css
+│       pyscript.css
+│
+└───js
+        distutils.tar
+        micropip-0.1-py3-none-any.whl
+        packages.json
+        packaging-21.3-py3-none-any.whl
+        pyodide.asm.data
+        pyodide.asm.js
+        pyodide.asm.wasm
+        pyodide.js
+        pyodide.js.map
+        pyodide_py.tar
+        pyparsing-3.0.7-py3-none-any.whl
+        pyscript.js
+        pyscript.js.map
+        pyscript.py
+```
+
+Как видите, PyScript — это смесь `Python`, `JavaScript`, `WebAssembly`, `CSS` и `HTML`. 
+На практике вы будете выполнять большую часть своего программирования PyScript, используя `Python`.
+
+Подход, который вы выбрали в этом разделе, дает вам гораздо более детальный контроль над версиями 
+Pyodide и базового интерпретатора Python. Чтобы проверить, какие версии `Python` доступны через 
+`Pyodide`, вы можете посмотреть [журнал изменений](https://pyodide.org/en/stable/project/changelog.html). 
+Например, `Pyodide 0.20.0`, используемый в этом руководстве, был создан поверх `CPython 3.10.2`.
+
+Если вы сомневаетесь, вы всегда можете самостоятельно проверить версию `Python`, работающую в 
+вашем браузере.
+
+# Проверьте свои версии Pyodide и Python
+
