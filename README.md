@@ -1509,3 +1509,266 @@ alert(f"Welcome to {window.location}, {name}!")
 Ладно, как насчет чего-нибудь более захватывающего?
 
 ## Сенсорный API
+
+Веб-браузеры, работающие на мобильных устройствах, таких как планшеты или смартфоны, предоставляют Sensor API, который 
+дает программистам JavaScript доступ к акселерометру, датчику внешней освещенности, гироскопу или магнитометру 
+устройства, если оно им оснащено. Кроме того, некоторые датчики можно эмулировать в программном обеспечении, 
+комбинируя сигналы от нескольких физических датчиков, уменьшая шум. Хорошим примером является датчик силы тяжести.
+
+Вы можете посмотреть живую демонстрацию, иллюстрирующую использование датчика гравитации в PyScript. Обязательно 
+откройте ссылку на мобильном устройстве. Как только вы измените ориентацию своего телефона или планшета, вы увидите 
+одно из следующих сообщений на экране:
+
+* Горизонтально против часовой стрелки
+* Горизонтально по часовой стрелке
+* Вертикальная стойка
+* Вертикально вверх ногами
+* Экран вверх
+* Экран вниз
+* Наклонный
+
+Если ваше устройство не оснащено датчиком гравитации или вы заходите на сайт через незашифрованное соединение, вы 
+получите уведомление об этом во всплывающем окне. Кроме того, вы можете просто увидеть пустой экран.
+
+> **_Примечание_**. Убедитесь, что ваш HTML-файл размещен по защищенному протоколу HTTPS, чтобы использовать 
+> Sensor API. Веб-браузеры будут блокировать этот JavaScript API для контента, который передается через обычный HTTP.
+> Вы можете узнать, как опубликовать свое приложение PyScript, чтобы узнать об этом подробнее.
+
+Чтобы подключиться к датчику на вашем устройстве, вам нужно будет написать небольшой связующий код JavaScript, 
+потому что PyScript в настоящее время не экспортирует экземпляр Pyodide, который он создает, в глобальное пространство 
+имен JavaScript. Если бы это было так, то вы могли бы получить доступ к прокси-объектам Python в JavaScript с немного 
+меньшими проблемами. А пока вы пойдете наоборот, вызвав функцию JavaScript из Python.
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyScript Gravity Sensor</title>
+  <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+  <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+</head>
+<body>
+  <script>
+    function addGravityListener(callback) {
+      if ("GravitySensor" in window) {
+        const sensor = new GravitySensor({frequency: 60})
+        sensor.addEventListener("reading",
+          () => callback(sensor.x, sensor.y, sensor.z)
+        )
+        sensor.start()
+      } else {
+        alert("Gravity sensor unavailable")
+      }
+    }
+  </script>
+</body>
+</html>
+```
+
+Функция принимает обратный вызов, который будет прокси-сервером JavaScript для вашей функции Python. Затем он 
+проверяет, поддерживает ли ваш браузер интерфейс `GravitySensor`, и создает новый экземпляр датчика с частотой 
+дискретизации шестьдесят раз в секунду. Показания одного датчика представляют собой трехмерный вектор, представляющий 
+направление и величину силы тяжести.
+
+Затем реализуйте и зарегистрируйте обратный вызов Python в браузере с помощью PyScript:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyScript Gravity Sensor</title>
+  <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+  <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+</head>
+<body>
+  <span></span>
+  <script>
+    function addGravityListener(callback) {
+      if ("GravitySensor" in window) {
+        const sensor = new GravitySensor({frequency: 60})
+        sensor.addEventListener("reading",
+          () => callback(sensor.x, sensor.y, sensor.z)
+        )
+        sensor.start()
+      } else {
+        alert("Gravity sensor unavailable")
+      }
+    }
+  </script>
+  <py-script>
+from js import addGravityListener
+from pyodide import create_proxy
+
+span = document.querySelector("span")
+
+def callback(x, y, z):
+    span.innerText = f"{x:.1f}, {y:.1f}, {z:.1f}"
+
+addGravityListener(create_proxy(callback))
+  </py-script>
+</body>
+</html>
+```
+
+Предполагая, что где-то на вашей странице есть элемент `<span>`, вы находите его ссылку с помощью селектора CSS, а 
+затем записываете в нее отформатированную строку с тремя компонентами вектора силы тяжести после получения показаний 
+датчика. Обратите внимание на необходимость обернуть ваш обратный вызов Python в прокси-сервер JavaScript, прежде чем 
+регистрировать его в качестве прослушивателя.
+
+Знание направления вектора гравитации расскажет вам кое-что об ориентации вашего телефона, что может быть полезно, 
+когда вы хотите сделать снимок уровня или определить, например, когда вы взяли устройство со стола. Величина вектора 
+гравитации — это ускорение Земли, которое вы можете использовать как приблизительную оценку высоты.
+
+Чтобы сделать этот пример более интересным, используйте NumPy для определения различных ориентаций устройства:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyScript Gravity Sensor</title>
+  <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+  <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+  <py-env>
+    - numpy
+  </py-env>
+</head>
+<body>
+  <span></span>
+  <script>
+    function addGravityListener(callback) {
+      if ("GravitySensor" in window) {
+        const sensor = new GravitySensor({frequency: 60})
+        sensor.addEventListener("reading",
+          () => callback(sensor.x, sensor.y, sensor.z)
+        )
+        sensor.start()
+      } else {
+        alert("Gravity sensor unavailable")
+      }
+    }
+  </script>
+  <py-script>
+from js import addGravityListener
+from pyodide import create_proxy
+import numpy as np
+
+span = document.querySelector("span")
+
+def callback(x, y, z):
+    span.innerText = orientation(x, y, z)
+
+def orientation(x, y, z):
+    gravity = np.array([x, y, z])
+    v = list(np.round(gravity / np.linalg.norm(gravity)).astype(int))
+    if v == [ 1,  0,  0]: return "Horizontal counterclockwise"
+    if v == [-1,  0,  0]: return "Horizontal clockwise"
+    if v == [ 0,  1,  0]: return "Vertical upright"
+    if v == [ 0, -1,  0]: return "Vertical upside down"
+    if v == [ 0,  0,  1]: return "Screen up"
+    if v == [ 0,  0, -1]: return "Screen down"
+    return "Tilted"
+
+addGravityListener(create_proxy(callback))
+  </py-script>
+</body>
+</html>
+```
+
+Вы добавляете объявление `<py-env>` для извлечения NumPy в среду PyScript. Затем вы импортируете библиотеку в верхней 
+части существующего тега `<py-script>` и делаете так, чтобы обратный вызов делегировал обработку вспомогательной 
+функции. Новая функция `orientation()` нормализует и округляет вектор гравитации, чтобы сравнить его с несколькими 
+единичными векторами вдоль осей в системе координат устройства.
+
+Если ваше устройство не поддерживает датчик гравитации, попробуйте определить другие работающие датчики, затем 
+придумайте идею для другого приложения и соответствующим образом адаптируйте код, показанный в этом примере. 
+
+## Функции таймера
+
+JavaScript часто использует так называемые функции таймера, чтобы запланировать обратный вызов для запуска один раз в 
+будущем или периодически через определенное количество миллисекунд. Последнее может быть полезно для анимации контента 
+на странице или опроса сервера для получения последнего снимка быстро меняющихся данных.
+
+Если вы намерены отложить выполнение одноразовой функции, например, чтобы отобразить напоминание или всплывающее окно 
+через определенное время, рассмотрите возможность использования `create_once_callable()` для создания прокси-объекта.
+Pyodide автоматически избавится от него, когда закончит:
+
+```python
+from js import alert, setTimeout
+from pyodide import create_once_callable
+
+setTimeout(
+  create_once_callable(
+    lambda: alert("Reminder: Meeting in 10 minutes")
+  ),
+  3000  # Delay in milliseconds
+)
+```
+
+Вы используете `setTimeout()` функцию из JavaScript, которая ожидает вызываемый объект, такой как лямбда-функция 
+Python, обернутая в прокси, и количество миллисекунд ожидания перед запуском вашего вызываемого объекта. Здесь вы 
+отображаете окно предупреждения с напоминанием через три секунды.
+
+Вы заметите, что PyScript печатает числовое значение в HTML-документе после запуска приведенного выше кода. Это 
+возвращаемое значение `setTimeout()` функции, которое предоставляет уникальный идентификатор тайм-аута, который вы 
+можете при желании отменить с помощью соответствующей функции `clearTimeout()`:
+
+```python
+from js import alert, setTimeout, clearTimeout
+from pyodide import create_once_callable
+
+timeout_id = setTimeout(
+  create_once_callable(
+    lambda: alert("Reminder: Meeting in 10 minutes")
+  ),
+  3000  # Delay in milliseconds
+)
+
+clearTimeout(timeout_id)
+```
+
+В этом случае вы отменяете тайм-аут, используя его уникальный идентификатор, сразу после планирования обратного 
+вызова, поэтому он никогда не запускается.
+
+Есть аналогичная пара названных функций JavaScript `setInterval()`, `clearInterval()` которые в основном работают 
+одинаково. Однако вызовы вашего обратного вызова будут выполняться через определенные промежутки времени, например, 
+каждые три секунды минус время выполнения вашей функции. Если вашей функции требуется больше времени для выполнения, 
+то в следующий раз она будет запущена как можно скорее, без задержки.
+
+Чтобы использовать `setInterval()` в PyScript, вам нужно не забыть обернуть свою функцию обратного вызова вызовом 
+`create_proxy()` вместо того `create_once_callable()`, чтобы предотвратить ее удаление Pyodide после первого запуска:
+
+```python
+from random import randint
+
+from js import alert, setInterval, setTimeout, clearInterval
+from pyodide import create_once_callable, create_proxy
+
+def callback():
+    r, g, b = randint(0, 255), randint(0, 255), randint(0, 255)
+    document.body.style.backgroundColor = f"rgb({r}, {b}, {b})"
+
+interval_id = setInterval(create_proxy(callback), 1000)
+
+_ = setTimeout(
+    create_once_callable(
+        lambda: clearInterval(interval_id)
+    ),
+    10_000
+)
+```
+
+Здесь происходит несколько вещей. Вы регистрируете обратный вызов для запуска каждую секунду, который устанавливает 
+фон документа случайным образом. Затем, через десять секунд, вы останавливаете его, очищая соответствующий интервал. 
+Наконец, чтобы PScript не отображал идентификатор тайм-аута, вы присваиваете возвращаемое значение `setTimeout()`
+переменной-заполнителю, обозначенной символом подчеркивания `_`, что является стандартным соглашением в Python.
+
+Хорошо. Это были основные части интерфейса веб-браузера, которые вы могли использовать в JavaScript, которые теперь 
+доступны вам в Python благодаря PyScript. Далее у вас будет возможность использовать некоторые возможности 
+веб-браузера для улучшения вашего практического проекта PyScript.
+
