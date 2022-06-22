@@ -1353,3 +1353,128 @@ Set-Cookie: session_id=1ddb897c43fc5f1b773cc5af6cfbe4cf;
 разрешены в JavaScript, но может быть возможно получить его с веб-сервера при выборке некоторых данных.
 
 # Fetch API
+
+При отправке HTTP-запросов из веб-браузера в JavaScript вы ограничены несколькими политиками безопасности, которые не 
+дают вам столько свободы, как вы могли бы привыкнуть к разработчику серверной части. Более того, изначально асинхронная 
+модель JavaScript плохо сочетается с синхронными функциями Python для создания сетевых подключений. В результате такие 
+модули, как `urllib.request` или `socket`, бесполезны в PyScript.
+
+Pyodide рекомендует писать HTTP-клиенты с точки зрения веб-API, таких как API-интерфейс Fetch на основе promises. Чтобы 
+упростить вызов этого API из Python, Pyodide предоставляет `pyfetch()` функцию-оболочку, которая работает в асинхронном 
+контексте.
+
+Если вы хотите сделать запрос REST API, например, чтобы аутентифицировать себя с помощью имени пользователя и пароля, 
+вы можете вызвать `pyfetch()`, который имеет сигнатуру, аналогичную `fetch()` функции JavaScript:
+
+```python
+# Run this using "asyncio"
+
+import json
+
+from pyodide.http import pyfetch
+from pyodide import JsException
+
+async def login(email, password):
+    try:
+        response = await pyfetch(
+            url="https://reqres.in/api/login",
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps({"email": email, "password": password})
+        )
+        if response.ok:
+            data = await response.json()
+            return data.get("token")
+    except JsException:
+        return None
+
+token = await loop.run_until_complete(
+    login("eve.holt@reqres.in", "cityslicka")
+)
+print(token)
+```
+
+Слово `asyncio`, которое появляется в комментарии в верхней части приведенного выше фрагмента кода, указывает PyScript 
+выполнять этот код асинхронно, чтобы вы могли дождаться цикла обработки событий внизу. Помните, что вы можете поместить 
+это волшебное слово в любое место вашего кода, чтобы вызвать то же самое действие, которое в настоящее время похоже на 
+произнесение заклинания. Возможно, со временем появится более явный способ переключения этого поведения, например, с 
+помощью атрибута тега `<py-script>`.
+
+Когда вы вызываете login() сопрограмму с адресом электронной почты и паролем, вы отправляете HTTP-запрос POST к 
+поддельному API, размещенному в Интернете. Обратите внимание, что вы сериализуете полезную нагрузку в JSON в Python, 
+используя модуль `json` вместо объекта JavaScript JSON.
+
+Вы также можете использовать `pyfetch()` для загрузки файлов, а затем сохранить их в виртуальной файловой системе, 
+предоставляемой `emscripten` в Pyodide. Обратите внимание, что эти файлы будут видны только в вашем текущем сеансе 
+браузера через интерфейс ввода/вывода, но вы **не найдете** их в папке `Downloads/` на вашем диске:
+
+```python
+# Run this using "asyncio"
+
+from pathlib import Path
+
+from pyodide.http import pyfetch
+from pyodide import JsException
+
+async def download(url, filename=None):
+    filename = filename or Path(url).name
+    try:
+        response = await pyfetch(url)
+        if response.ok:
+            with open(filename, mode="wb") as file:
+                file.write(await response.bytes())
+    except JsException:
+        return None
+    else:
+        return filename
+
+filename = await loop.run_until_complete(
+    download("https://placekitten.com/500/900", "cats.jpg")
+)
+```
+
+Если вы не хотите сохранить файл под другим именем, вы используете модуль `pathlib` для извлечения имени файла из 
+URL-адреса, который вернет ваша функция. Объект ответа, возвращаемый `pyfetch()` имеет ожидаемый `.bytes()` метод, 
+который вы используете для сохранения двоичного содержимого в новый файл.
+
+> **_Примечание_**. Сервер, с которого вы пытаетесь загрузить файлы, должен быть настроен на возврат соответствующих 
+> заголовков CORS, иначе браузер заблокирует ваш запрос на получение.
+
+Позже вы можете прочитать загруженный файл из виртуальной файловой системы и отобразить его на элементе `<img>` в HTML:
+
+```python
+import base64
+
+data = base64.b64encode(open(filename, "rb").read()).decode("utf-8")
+src = f"data:image/jpeg;charset=utf-8;base64,{data}"
+document.querySelector("img").setAttribute("src", src)
+```
+
+Вам нужно будет преобразовать необработанные байты в текст с использованием кодировки Base64, а затем отформатировать 
+полученную строку как URL-адрес данных, прежде чем назначать ее атрибуту `src` элемента изображения.
+
+В качестве альтернативы вы можете использовать полностью синхронную функцию в PyScript для получения данных по сети. 
+Единственная загвоздка в том, что `open_url()` нельзя читать двоичные данные:
+
+```python
+from pyodide.http import open_url
+
+pep8_url = "https://raw.githubusercontent.com/python/peps/main/pep-0008.txt"
+pep8_text = open_url(pep8_url).getvalue()
+
+import json
+user = json.load(open_url("https://jsonplaceholder.typicode.com/users/2"))
+
+svg = open_url("https://www.w3.org/Icons/SVG/svg-logo-v.svg")
+print(svg.getvalue())
+```
+
+Этот первый вызов `open_url()` извлекает исходный текст документа PEP 8, который вы сохраняете в переменной. Второй 
+вызов взаимодействует с конечной точкой REST API, которая возвращает пользовательский объект в формате JSON, который 
+затем десериализуется в словарь Python. Третий вызов загружает официальный логотип SVG, который вы можете отобразить 
+в своем браузере, поскольку SVG — это текстовый формат.
+
+Когда вы получаете данные из Интернета, вы обычно хотите сохранить их для последующего доступа. Браузеры предлагают 
+несколько областей веб-хранилища на выбор, в зависимости от желаемого объема и срока действия вашей информации. 
+Локальное хранилище — ваш лучший вариант, если вы хотите постоянно хранить данные.
+
