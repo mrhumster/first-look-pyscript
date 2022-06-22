@@ -1,52 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PyScript Gravity Sensor</title>
-  <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
-  <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
-  <py-env>
-    - numpy
-  </py-env>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sine Wave Interference</title>
+    <!-- PyScript source -->
+    <link rel="stylesheet" href="static/css/pyscript.css" />
+    <script defer src="static/js/pyscript.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="static/css/theme.css" />
+    <py-env>
+      - numpy
+      - paths:
+        - static/js/src/waves.py
+    </py-env>
 </head>
 <body>
-  <span></span>
-  <script>
-    function addGravityListener(callback) {
-      if ("GravitySensor" in window) {
-        const sensor = new GravitySensor({frequency: 60})
-        sensor.addEventListener("reading",
-          () => callback(sensor.x, sensor.y, sensor.z)
-        )
-        sensor.start()
-      } else {
-        alert("Gravity sensor unavailable")
-      }
-    }
-  </script>
-  <py-script>
-from js import addGravityListener
-from pyodide import create_proxy
-import numpy as np
-
-span = document.querySelector("span")
-
-def callback(x, y, z):
-    span.innerText = orientation(x, y, z)
-
-def orientation(x, y, z):
-    gravity = np.array([x, y, z])
-    v = list(np.round(gravity / np.linalg.norm(gravity)).astype(int))
-    if v == [ 1,  0,  0]: return "Horizontal counterclockwise"
-    if v == [-1,  0,  0]: return "Horizontal clockwise"
-    if v == [ 0,  1,  0]: return "Vertical upright"
-    if v == [ 0, -1,  0]: return "Vertical upside down"
-    if v == [ 0,  0,  1]: return "Screen up"
-    if v == [ 0,  0, -1]: return "Screen down"
-    return "Tilted"
-
-addGravityListener(create_proxy(callback))
-  </py-script>
+  <fieldset>
+    <legend>Frequency<sub>1</sub></legend>
+    <input id="range1"
+      type="range" min="440" max="442" step="0.1" value="440">
+    <label for="range1">440</label> Hz
+  </fieldset>
+  <fieldset>
+    <legend>Frequency<sub>2</sub></legend>
+    <input id="range2"
+      type="range" min="440" max="442" step="0.1" value="441">
+    <label for="range2">441</label> Hz
+  </fieldset>
+  <canvas id="chart"></canvas>
+  <py-script src="static/js/src/controls.py"></py-script>
+  <script src="static/js/src/plotting.js"></script>
 </body>
 </html>
