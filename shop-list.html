@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DOM API in PyScript</title>
+    <!-- PyScript source -->
+    <link rel="stylesheet" href="static/css/pyscript.css" />
+    <script defer src="static/js/pyscript.js"></script>
+    <!-- CSS only -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+    <style>
+        .crossed {
+          text-decoration: line-through;
+        }
+    </style>
+</head>
+<body>
+    <div id="shopping-list" class="card">
+        <div class="card-header">
+            <p>Shopping List</p>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                  <li class="list-group-item">milk</li>
+                  <li class="list-group-item">eggs</li>
+                  <li class="list-group-item">bread</li>
+            </ul>
+        </div>
+        <div class="card-footer">
+            <div class="input-group">
+                <input id="new-item" type="text" class="form-control" placeholder="Add new item">
+                <button class="btn btn-outline-secondary">Add</button>
+            </div>
+        </div>
+    </div>
+    <py-script>
+from pyodide import create_proxy
+
+def on_add_click(event):
+    input_new_item = document.querySelector("#new-item")
+
+    if input_new_item.value:
+        child = document.createElement("li")
+        child.setAttribute("class", "list-group-item")
+        child.innerText = input_new_item.value
+
+        parent = document.querySelector("#shopping-list ul")
+        parent.appendChild(child)
+
+        input_new_item.value = ""
+
+button = document.querySelector("button")
+button.addEventListener("click", create_proxy(on_add_click))
+    </py-script>
+</body>
+</html>
