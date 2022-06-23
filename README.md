@@ -1985,3 +1985,5 @@ Element("panel").write(fig)
 нынешнем виде, вы узнаете, как бесплатно поделиться им с кем угодно в мире, даже если на их компьютере не установлен 
 интерпретатор Python.
 
+> GitHub Pages - пример 
+> https://mrhumster.github.io/A_First_Look_at_PyScript/
